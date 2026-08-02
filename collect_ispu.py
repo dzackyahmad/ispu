@@ -100,12 +100,14 @@ def ambil():
         df[k] = angka(df[k])
 
     # ---- label PM2.5 dalam ug/m3 ----
+    # ISPU 0 = tidak ada bacaan, bukan udara bersih sempurna
+    t25 = df["t_pm25"].where(df["t_pm25"] > 0)
     langsung = df["a_pm25"].where(df["a_pm25"] > 0)
-    konversi = df["t_pm25"].map(ispu_ke_ugm3)
+    konversi = t25.map(ispu_ke_ugm3)
     df["pm25_ugm3"] = langsung.fillna(konversi)
     df["sumber_label"] = np.where(
         df["a_pm25"] > 0, "ISPU-langsung",
-        np.where(df["t_pm25"].notna(), "ISPU-konversi", "kosong"))
+        np.where(t25.notna(), "ISPU-konversi", "kosong"))
 
     # ---- sel grid ----
     df["i"], df["j"] = ke_sel(df["lon"], df["lat"])
