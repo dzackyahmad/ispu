@@ -1,0 +1,42 @@
+name: Rekam ISPU
+
+on:
+  schedule:
+    - cron: '20,50 * * * *'      # dua kali per jam, menit ke-20 dan ke-50 UTC
+  workflow_dispatch:              # tombol jalankan manual
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rekam-ispu
+  cancel-in-progress: false
+
+jobs:
+  rekam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install --quiet requests pandas numpy
+
+      - name: Ambil snapshot
+        run: python collect_ispu.py
+
+      - name: Commit hasil
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ispu_log.csv
+          if git diff --staged --quiet; then
+            echo "tidak ada data baru"
+          else
+            git commit -m "rekam ISPU $(date -u +%FT%TZ)"
+            git pull --rebase --autostash origin ${{ github.ref_name }}
+            git push
+          fi
